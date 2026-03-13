@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Brainworkers Bus Tracking</title>
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#f2f2f2;
+}
+header{
+background:#1976d2;
+color:white;
+padding:20px;
+text-align:center;
+}
+.menu{
+position:fixed;
+left:10px;
+top:10px;
+background:white;
+padding:8px 12px;
+font-size:22px;
+cursor:pointer;
+border-radius:6px;
+box-shadow:0 0 5px gray;
+z-index:999;
+}
+.sidebar{
+position:fixed;
+left:0;
+top:0;
+width:0;
+height:100%;
+background:#222;
+overflow:hidden;
+transition:0.3s;
+padding-top:60px;
+z-index:998;
+}
+.sidebar a{
+display:block;
+color:white;
+padding:12px;
+text-decoration:none;
+}
+.sidebar a:hover{
+background:#444;
+}
+.container{
+max-width:900px;
+margin:auto;
+padding:20px;
+text-align:center;
+}
+.buslist p{
+background:white;
+padding:12px;
+margin:8px auto;
+max-width:500px;
+border-radius:6px;
+cursor:pointer;
+}
+button{
+padding:10px 20px;
+margin:8px;
+background:#1976d2;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+button:disabled{
+background:gray;
+cursor:not-allowed;
+}
+input{
+padding:10px;
+width:80%;
+max-width:400px;
+}
+.chatBtn{
+position:fixed;
+right:20px;
+bottom:20px;
+background:#1976d2;
+color:white;
+padding:10px 16px;
+border-radius:25px;
+cursor:pointer;
+}
+.chatBox{
+position:fixed;
+right:20px;
+bottom:70px;
+width:280px;
+background:white;
+border:1px solid #ccc;
+display:none;
+flex-direction:column;
+height:320px;
+}
+.chatMessages{
+flex:1;
+overflow:auto;
+padding:10px;
+font-size:14px;
+}
+.chatInput{
+border:none;
+border-top:1px solid #ccc;
+padding:10px;
+width:100%;
+}
+.bot{color:green}
+.user{text-align:right;color:blue}
+img{
+width:100%;
+max-width:700px;
+border-radius:10px;
+margin-top:20px;
+}
+.resultBox{
+background:white;
+margin:10px;
+padding:15px;
+border-radius:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="menu" onclick="toggleMenu()">☰</div>
+
+<div class="sidebar" id="sidebar">
+<a onclick="home()">Home</a>
+<a onclick="availableBus()">Available Bus</a>
+<a onclick="searchPage()">Search</a>
+<a onclick="timingPage()">Bus Timing</a>
+</div>
+
+<header>
+<h1>Welcome to brainworkers.com</h1>
+</header>
+
+<div class="container" id="content"></div>
+
+<div class="chatBtn" onclick="toggleChat()">Chat</div>
+<div class="chatBox" id="chatBox">
+<div class="chatMessages" id="chatMessages">
+<div class="bot">Hello! Ask anything about bus.</div>
+</div>
+<input class="chatInput" id="chatInput" placeholder="Type message" onkeydown="chatSend(event)">
+</div>
+
+<script>
+function toggleMenu(){
+let s=document.getElementById("sidebar");
+s.style.width=(s.style.width=="200px")?"0":"200px";
+}
+
+let buses = {
+"1A":["Nagercoil","Kottar","Suchindram","Kanyakumari"], 
+"2B":["Kanyakumari","Suchindram","Kottar","Marthandam","Nagercoil"], 
+"3C":["Nagercoil","Thuckalay","Colachel","Marthandam"], 
+"4D":["Kanyakumari","Thovalai","Nagercoil"],
+"5A":["Marthandam","Kaliyakkavilai","Nagercoil","Colachel"],
+"6B":["Nagercoil","Vadasery","Thuckalay","Colachel"],
+"7C":["Colachel","Eraviputhoor","Nagercoil","Kottar"],
+"8D":["Marthandam","Kaliyakkavilai","Colachel","Thovalai"],
+"9A":["Nagercoil","Parvathipuram","Thovalai","Kanyakumari"],
+"10B":["Thovalai","Aralvaimozhi","Nagercoil","Kottar"],
+"11C":["Nagercoil","Kottar","Kaliyakkavilai","Marthandam"],
+"12D":["Colachel","Thuckalay","Nagercoil","Thovalai"],
+"13A":["Nagercoil","Suchindram","Kanyakumari","Marthandam"],
+"14B":["Kanyakumari","Nagercoil","Marthandam","Colachel"],
+"15C":["Nagercoil","Parvathipuram","Colachel","Kottar"],
+"16D":["Colachel","Nagercoil","Thovalai","Kanyakumari"],
+"17A":["Marthandam","Nagercoil","Kanyakumari","Suchindram"],
+"18B":["Thovalai","Nagercoil","Colachel","Marthandam"],
+"19C":["Nagercoil","Thuckalay","Marthandam","Colachel"],
+"20D":["Colachel","Thuckalay","Nagercoil","Kottar"]
+};
+
+let timings={
+"1A":{start:"06:00 AM",next:"06:40 AM"},
+"2B":{start:"06:10 AM",next:"06:50 AM"},
+"3C":{start:"06:20 AM",next:"07:00 AM"},
+"4D":{start:"06:30 AM",next:"07:10 AM"},
+"5A":{start:"06:40 AM",next:"07:20 AM"},
+"6B":{start:"06:50 AM",next:"07:30 AM"},
+"7C":{start:"07:00 AM",next:"07:40 AM"},
+"8D":{start:"07:10 AM",next:"07:50 AM"},
+"9A":{start:"07:20 AM",next:"08:00 AM"},
+"10B":{start:"07:30 AM",next:"08:10 AM"},
+"11C":{start:"07:40 AM",next:"08:20 AM"},
+"12D":{start:"07:50 AM",next:"08:30 AM"},
+"13A":{start:"08:00 AM",next:"08:40 AM"},
+"14B":{start:"08:10 AM",next:"08:50 AM"},
+"15C":{start:"08:20 AM",next:"09:00 AM"},
+"16D":{start:"08:30 AM",next:"09:10 AM"},
+"17A":{start:"08:40 AM",next:"09:20 AM"},
+"18B":{start:"08:50 AM",next:"09:30 AM"},
+"19C":{start:"09:00 AM",next:"09:40 AM"},
+"20D":{start:"09:10 AM",next:"09:50 AM"}
+};
+
+function home(){
+document.getElementById("content").innerHTML=`
+<h2>Bus Tracking System</h2>
+<p>Brainworkers bus database helps passengers easily identify bus routes, stops, and timing information. With a simple and user-friendly interface, users can search for buses, view all stops along the route, and get expected arrival times at each stop.</p>
+<p>Brainworkers bus database primarily tracks government-operated buses across Tamil Nadu, including TNSTC, SETC, and MTC services. These buses cover almost all districts, towns, and major routes.</p>
+<p>Brainworkers also offers a smart search feature where passengers can quickly find buses by entering the source and destination. The website’s database includes over 450 bus stands across Tamil Nadu.</p>
+<h2>Developers</h2>
+<p>Priyadharshini M<br>Adlin Jeno JR<br>Ramalakshmi P<br>Vinitha M</p>
+<button onclick="showDevInfo()">Know More</button>
+`;
+}
+
+function showDevInfo(){
+  document.getElementById("content").innerHTML=`
+    <h2>About this Website</h2>
+    <p>
+      This website was created using <b>HTML, CSS, and JavaScript</b> to provide a fast, interactive bus tracking experience across <b>Tamil Nadu</b>. It primarily focuses on <b>government buses</b> such as TNSTC, SETC, and MTC, covering over <b>450 bus stands</b> across the state. The platform ensures passengers can access reliable and accurate route and timing information.
+    </p>
+    <p><b>Hosting and Deployment:</b><br>
+      The website is hosted on <b>Netlify</b>, which provides free and secure hosting. Deployment can be done easily using drag-and-drop of the website folder or through <b>GitHub integration</b>, making updates fast and simple.
+    </p>
+    <p><b>Development Tools:</b><br>
+      The website was developed using <b>Visual Studio Code</b> for coding, <b>Google Maps API</b> for location integration, and <b>Browser Developer Tools</b> for testing and debugging. <b>Netlify Drop</b> was used for quick deployment of the site without needing complex server setups.
+    </p>
+    <p><b>Features:</b><br>
+      - <b>Bus Search & Route Tracking:</b> Users can search buses by number or stops and view all stops along the route with next/previous navigation.<br>
+      - <b>Bus Timings:</b> Displays start time, next trip, and total trips for each bus.<br>
+      - <b>Interactive Chat:</b> A simulated AI chatbot provides replies in <b>English or Tamil</b>, helping passengers with bus-related queries.<br>
+      - <b>Map Integration:</b> Users can open Google Maps to view the current stop or bus location.<br>
+      - <b>Developers Info:</b> Provides information about the tools and process used to create the website.
+    </p>
+    <p><b>Why This Website:</b><br>
+      The main goal of this website is to help passengers <b>plan their journeys efficiently</b>, <b>reduce waiting times</b>, and easily navigate government bus services throughout Tamil Nadu.
+    </p>
+    <p><b>Future Enhancements:</b><br>
+      Future improvements may include <b>real-time GPS tracking</b>, a <b>smarter AI chatbot</b>, <b>multi-language support</b>, <b>notifications for buses</b>, and an option to <b>bookmark favorite buses</b> for quick access.
+    </p>
+    <button onclick="home()">Back</button>
+  `;
+}
+
+function availableBus(){
+let html="<h2>Available Buses</h2><div class='buslist'>";
+for(let b in buses){
+html+=`<p onclick="busDetails('${b}')">${b}</p>`;
+}
+html+="</div>";
+document.getElementById("content").innerHTML=html;
+}
+
+let stops=[], index=0;
+function busDetails(bus){
+stops=buses[bus]; 
+index=0;
+document.getElementById("content").innerHTML=`
+<h2>Bus ${bus}</h2>
+<p id="currentStop">Current Stop : ${stops[index]}</p>
+<button id="prevBtn" onclick="prevStop()" disabled>Previous</button>
+<button id="nextBtn" onclick="nextStop()">Next</button>
+<button onclick="openMap()">Map Location</button>
+<button onclick="availableBus()">Back</button>
+`;
+updateStopButtons();
+}
+
+function nextStop(){
+if(index<stops.length-1){index++; updateStopButtons();}
+}
+function prevStop(){
+if(index>0){index--; updateStopButtons();}
+}
+
+function updateStopButtons(){
+const currentStopEl = document.getElementById("currentStop");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+currentStopEl.innerHTML = "Current Stop : " + stops[index] + ((index===stops.length-1)?" (Last Stop)":"");
+prevBtn.disabled = (index===0);
+nextBtn.disabled = (index===stops.length-1);
+}
+
+function openMap(){
+let stop=stops[index];
+window.open("https://www.google.com/maps/search/"+stop);
+}
+
+function searchPage(){
+document.getElementById("content").innerHTML=`
+<h2>Search Bus or Stop</h2>
+<input id="searchInput">
+<button onclick="searchBus()">Search</button>
+<div id="result"></div>
+`;
+}
+
+function searchBus(){
+let q=document.getElementById("searchInput").value.toLowerCase();
+let html="";
+for(let b in buses){
+let num=b.toLowerCase();
+let stopsStr=buses[b].join().toLowerCase();
+if(num.includes(q)||stopsStr.includes(q)){
+html+=`<p onclick="busDetails('${b}')">${b}</p>`;
+}
+}
+document.getElementById("result").innerHTML=html;
+}
+
+function timingPage(){
+let html="<h2>Bus Timing</h2>";
+for(let b in buses){
+html+=`<div class="resultBox"><b>${b}</b><br>Start : ${timings[b].start}<br>Trips : 8 Trips<br>Next Bus : ${timings[b].next}</div>`;
+}
+document.getElementById("content").innerHTML=html;
+}
+
+function toggleChat(){
+let c=document.getElementById("chatBox");
+c.style.display=(c.style.display=="flex")?"none":"flex";
+}
+
+function chatSend(e){
+if(e.key==="Enter"){
+let input=document.getElementById("chatInput");
+let msg=input.value;
+let chat=document.getElementById("chatMessages");
+chat.innerHTML+=`<div class="user">${msg}</div>`;
+let reply="";
+if(msg.match(/bus/i)){ reply="The buses run according to the schedule. Check Available Bus section."; }
+else if(msg.match(/stop/i)){ reply="You can see each bus stop by clicking Available Bus and selecting a bus."; }
+else if(msg.match(/[a-zA-Z]/) && !msg.match(/bus|stop/i)){ reply="Sorry, I can only answer bus-related queries."; }
+else{ reply="மன்னிக்கவும், நான் பஸ் தொடர்பான கேள்விகளுக்கு மட்டுமே பதில் அளிக்க முடியும்."; }
+chat.innerHTML+=`<div class="bot">${reply}</div>`;
+input.value="";
+chat.scrollTop = chat.scrollHeight;
+}
+}
+
+home();
+</script>
+</body>
+</html>
